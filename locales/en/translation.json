@@ -3,5 +3,6 @@
   "Username cannot be null": "Username cannot be null",
   "E-mail cannot be null": "E-mail cannot be null",
   "E-mail already exists": "E-mail already exists",
-  "Password cannot be null": "Password cannot be null"
+  "Password cannot be null": "Password cannot be null",
+  "account_activation_link": "An account activation link is sent to {{email}}"
 }

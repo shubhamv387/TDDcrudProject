@@ -8,5 +8,6 @@
   "Must have min 4 and max 32 characters": "कम से कम 4 और अधिकतम 32 अक्षर होने चाहिए",
   "E-mail is not valid": "ईमेल मान्य नहीं है",
   "Password must be at least 6 characters": "कम से कम 6 अक्षर होने चाहिए",
-  "Password must have at least 1 uppercase, 1 lowercase, and 1 number": "कम से कम 1 अपरकेस, 1 लोवरकेस और 1 संख्या होनी चाहिए"
+  "Password must have at least 1 uppercase, 1 lowercase, and 1 number": "कम से कम 1 अपरकेस, 1 लोवरकेस और 1 संख्या होनी चाहिए",
+  "account_activation_link": "एक खाता सक्रियण लिंक ईमेल {{email}} पर भेजा गया है"
 }

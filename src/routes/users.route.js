@@ -1,12 +1,12 @@
-const express = require('express');
-const { signup } = require('../controller/users.controller');
-const router = express.Router();
-const UserServices = require('../middleware/inputFieldValidation');
+const express = require('express')
+const { signup } = require('../controller/users.controller')
+const router = express.Router()
+const UserServices = require('../middleware/inputFieldValidation')
 
 /* GET users listing. */
 router.get('/', function (req, res, _next) {
-  res.status(200).json({ message: 'Working good' });
-});
+  res.status(200).json({ message: 'Working good' })
+})
 
 router.post(
   '/',
@@ -14,7 +14,7 @@ router.post(
   UserServices.validateEmail('email'),
   UserServices.validatePassword('password'),
   signup,
-);
+)
 
 // router.post('/token/:token', async (req, res, _next) => {
 //   const token = req.params.token;
@@ -26,4 +26,4 @@ router.post(
 //   res.json({ message: req.t('account_activation_success') });
 // });
 
-module.exports = router;
+module.exports = router

@@ -1,95 +1,71 @@
-const request = require('supertest');
-const app = require('../../src/app');
-const User = require('../../src/model/User.model');
-const sequelize = require('../../src/config/db');
-
-beforeAll(() => {
-  return sequelize.sync();
-});
+const request = require('supertest')
+const app = require('../../src/app')
+const User = require('../../src/model/User.model')
 
 beforeEach(() => {
-  return User.destroy({ truncate: true });
-});
+  return User.destroy({ truncate: true })
+})
+
+jest.mock('nodemailer', () => require('../../__mocks__/mockUtils').mockNodemailer)
 
 const validUser = {
   username: 'user1',
   email: 'user1@mail.com',
   password: 'Password1',
-};
+}
 
 const postUser = (user = validUser, language = 'en') => {
-  return request(app).post('/api/1.0/users').set('Accept-Language', language).send(user).expect('Content-Type', /json/);
-};
+  return request(app).post('/api/1.0/users').set('Accept-Language', language).send(user).expect('Content-Type', /json/)
+}
 
 describe('User Registration', () => {
-  it('returns 200 OK when signup request is valid', async () => {
-    const response = await postUser();
-    expect(response.status).toBe(201);
-  });
-
-  it('returns success message when signup request is valid', async () => {
-    const response = await postUser();
-    expect(response.status).toBe(201);
-    expect(response.body.message).toBe('User created successfully');
-  });
-
-  it('returns success message in Hindi when signup request is valid', async () => {
-    const response = await postUser(validUser, 'hi');
-    expect(response.status).toBe(201);
-    expect(response.body.message).toBe('उपयोगकर्ता सफलतापूर्वक बनाया गया');
-  });
-
-  it('saves the user to database', async () => {
-    await postUser();
-    const userList = await User.findAll();
-    expect(userList.length).toBe(1);
-  });
-
-  it('saves the email and username to database', async () => {
-    await postUser();
-    const userList = await User.findAll();
-    const savedUser = userList[0];
-    expect(savedUser.username).toBe('user1');
-    expect(savedUser.email).toBe('user1@mail.com');
-  });
-
-  it('hashes the password then store to database', async () => {
-    await postUser();
-    const userList = await User.findAll();
-    const savedUser = userList[0];
-    expect(savedUser.password).not.toBe('password');
-  });
+  it('returns a custom error message with status 404 when an invalid route getting called', async () => {
+    const response = await request(app).get('/invalid-route')
+    expect(response.status).toBe(404)
+    expect(response.body).toHaveProperty('message')
+  })
 
   it('returns 400 when username is null', async () => {
     const response = await postUser({
       username: null,
       email: 'user1@mail.com',
       password: 'Password',
-    });
+    })
 
-    expect(response.status).toBe(400);
-  });
+    expect(response.status).toBe(400)
+  })
 
   it('returns validationErrors field in response body when validation Error occurs', async () => {
     const response = await postUser({
-      username: 'user1',
+      ...validUser,
       email: null,
-      password: 'Password',
-    });
+    })
 
-    expect(response.body.validationErrors).not.toBeUndefined();
-  });
+    expect(response.body.validationErrors).not.toBeUndefined()
+    expect(Object.keys(response.body.validationErrors)).toEqual(['email'])
+  })
 
   it('returns errors for both when username and email is null', async () => {
     const response = await postUser({
+      ...validUser,
       username: null,
       email: null,
-      password: 'Password1',
-    });
+    })
 
-    const { validationErrors } = response.body;
-    expect(Object.keys(validationErrors)).toEqual(['username', 'email']);
-  });
+    const { validationErrors } = response.body
+    expect(Object.keys(validationErrors)).toEqual(['username', 'email'])
+  })
+
+  it('returns errors for all when username, password and email is null', async () => {
+    const response = await postUser({
+      username: null,
+      email: null,
+      password: null,
+    })
+
+    const { validationErrors } = response.body
+    expect(Object.keys(validationErrors)).toEqual(['username', 'email', 'password'])
+  })
 
   it.each`
     field         | lang    | value              | expectedMessage
@@ -130,34 +106,78 @@ describe('User Registration', () => {
         username: 'user1',
         email: 'user1@mail.com',
         password: 'password1',
-      };
-      user[field] = value;
-      const response = await postUser(user, lang);
-      expect(response.body.validationErrors[field]).toBe(expectedMessage);
-    },
-  );
+      }
+      user[field] = value
+      const response = await postUser(user, lang)
+      expect(response.body.validationErrors[field]).toBe(expectedMessage)
+    }
+  )
 
-  it('returns E-mail already exists when same email is provided again', async () => {
-    await User.create({ ...validUser });
-    const response = await postUser();
-    // expect(response.status).toBe(409);
-    expect(response.body.validationErrors.email).toBe('E-mail already exists');
-  });
+  it.each`
+    field      | lang    | value              | expectedMessage
+    ${'email'} | ${'en'} | ${validUser.email} | ${'E-mail already exists'}
+    ${'email'} | ${'hi'} | ${validUser.email} | ${'ईमेल पहले से मौजूद है'}
+  `('returns $expectedMessage when $field already exists', async ({ field, expectedMessage, value, lang }) => {
+    await User.create({ ...validUser })
+    const user = {
+      username: 'user1',
+      email: 'user1@mail.com',
+      password: 'password1',
+    }
+    user[field] = value
 
-  it('returns E-mail already exists when same email is provided again', async () => {
-    await User.create({ ...validUser });
-    const response = await postUser(validUser, 'hi');
-    // expect(response.status).toBe(409);
-    expect(response.body.validationErrors.email).toBe('ईमेल पहले से मौजूद है');
-  });
+    const response = await postUser(user, lang)
+    expect(response.body.validationErrors[field]).toBe(expectedMessage)
+  })
 
   it('returns errors for both E-mail already exists and username is null', async () => {
-    await User.create({ ...validUser });
+    await User.create({ ...validUser })
     const response = await postUser({
+      ...validUser,
       username: null,
-      email: validUser.email,
-      password: 'Password1',
-    });
-    expect(Object.keys(response.body.validationErrors)).toStrictEqual(['username', 'email']);
-  });
-});
+    })
+    expect(response.body.validationErrors.username).toBe('Username cannot be null')
+    expect(response.body.validationErrors.email).toEqual('E-mail already exists')
+  })
+
+  /* ------------------------------------------------------------------------ */
+
+  it('hashes the password then storing email, username and hashed password to database', async () => {
+    await postUser()
+    const savedUser = await User.findOne({ where: { email: validUser.email } })
+    expect(savedUser.email).toBe(validUser.email)
+    expect(savedUser.username).toBe(validUser.username)
+    expect(savedUser.password).not.toBe(validUser.password)
+  })
+
+  it('saves the user to database', async () => {
+    await postUser()
+    const userList = await User.findAll()
+    expect(userList.length).toBe(1)
+  })
+
+  it('returns 201 when new user created successfully', async () => {
+    const response = await postUser()
+    expect(response.status).toBe(201)
+  })
+
+  it.each(['english', 'hindi'])('returns success to true in %s when new user created successfully', async (lang) => {
+    const language = lang === 'hindi' ? 'hi' : 'en'
+    const response = await postUser(validUser, language)
+    expect(response.body.success).toBeTruthy()
+  })
+
+  /* ----------------------------------------------------------------------- */
+
+  it.each([
+    ['english', `An account activation link is sent to ${validUser.email}`],
+    ['hindi', `एक खाता सक्रियण लिंक ईमेल ${validUser.email} पर भेजा गया है`],
+  ])(
+    'sends a message with account_activation_link in %s when new user created successfully',
+    async (lang, expectedMessage) => {
+      const language = lang === 'hindi' ? 'hi' : 'en'
+      const response = await postUser(validUser, language)
+      expect(response.body.message).toBe(expectedMessage)
+    }
+  )
+})

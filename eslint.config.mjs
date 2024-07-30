@@ -1,7 +1,7 @@
-import globals from 'globals';
-import pluginJs from '@eslint/js';
-import prettierConfig from 'eslint-config-prettier';
-import prettierPlugin from 'eslint-plugin-prettier';
+import globals from 'globals'
+import pluginJs from '@eslint/js'
+import prettierConfig from 'eslint-config-prettier'
+import prettierPlugin from 'eslint-plugin-prettier'
 
 export default [
   {
@@ -12,7 +12,10 @@ export default [
     },
     rules: {
       quotes: ['warn', 'single'],
-      'prettier/prettier': ['warn', { singleQuote: true, printWidth: 120, parser: 'flow', endOfLine: 'lf' }],
+      'prettier/prettier': [
+        'warn',
+        { singleQuote: true, semi: false, printWidth: 120, parser: 'flow', endOfLine: 'lf' },
+      ],
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },
@@ -23,4 +26,4 @@ export default [
       prettier: prettierPlugin,
     },
   },
-];
+]
